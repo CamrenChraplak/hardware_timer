@@ -74,7 +74,7 @@ bool uhwtDeconstructTimer(uhwt_timer_t timer) {
 
 uhwt_timer_t uwhtGetNextTimer() {
 	for (uhwt_timer_t i = 0; i < UHWT_TIMER_COUNT; i++) {
-		if (!uhwtTimerStarted(i) && !uhwtTimerClaimed(i)) {
+		if (!uhwtTimerInitialized(i) && !uhwtTimerClaimed(i)) {
 			return i;
 		}
 	}
@@ -118,7 +118,7 @@ bool uhwtSetup(uhwt_timer_t *timer, uhwt_freq_t targetFreq, uhwt_function_ptr_t 
 	if (function == NULL || timer == NULL) {
 		return false;
 	}
-	if (targetFreq == (uhwt_freq_t)0 || targetFreq > UHWT_TIMER_FREQ_MAX) {
+	if (!uhwtValidFrequency(targetFreq)) {
 		return false;
 	}
 
@@ -136,14 +136,20 @@ bool uhwtSetup(uhwt_timer_t *timer, uhwt_freq_t targetFreq, uhwt_function_ptr_t 
 		}
 	}
 
-	if (!uhwtValidPreScalar(*timer, scalar) || !uhwtValidTimerTicks(*timer, timerTicks)) {
+	if (!uhwtValidTimerPreScalar(*timer, scalar) || !uhwtValidTimerTicks(*timer, timerTicks)) {
 		return false;
 	}
 	
 	if (!uhwtTimerStarted(*timer)) {
-		uhwtInitTimer(*timer);
-		uhwtSetCallbackParams(*timer, function, params);
-		uhwtSetStats(*timer, scalar, timerTicks);
+		if (!uhwtInitTimer(*timer)) {
+			return false;
+		}
+		if (!uhwtSetCallbackParams(*timer, function, params)) {
+			return false;
+		}
+		if (!uhwtSetStats(*timer, scalar, timerTicks)) {
+			return false;
+		}
 		return true;
 	}
 

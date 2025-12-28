@@ -21,7 +21,7 @@
 
 #if !UHWT_SUPPORT || UHWT_SUPPORT_NATIVE
 
-uhwt_freq_t uhwtCalcFreq(uhwt_prescalar_t scalar, uhwt_timertick_t ticks) {
+uhwt_freq_t uhwtPlatformCalcFreq(uhwt_prescalar_t scalar, uhwt_timertick_t ticks) {
 	return 1;
 }
 

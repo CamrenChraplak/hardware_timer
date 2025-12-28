@@ -166,7 +166,7 @@ uhwt_timer_t uwhtPlatformGetNextTimerStats(uhwt_claim_s claimArgs);
  * 
  * @return if pre scalar is valid
  */
-bool uhwtValidPreScalar(uhwt_timer_t timer, uhwt_prescalar_t scalar);
+bool uhwtValidTimerPreScalar(uhwt_timer_t timer, uhwt_prescalar_t scalar);
 
 /**
  * Tests if given timer ticks is valid for timer
@@ -177,6 +177,24 @@ bool uhwtValidPreScalar(uhwt_timer_t timer, uhwt_prescalar_t scalar);
  * @return if timer ticks is valid
  */
 bool uhwtValidTimerTicks(uhwt_timer_t timer, uhwt_timertick_t ticks);
+
+/**
+ * Tests if given pre scalar is valid for platform
+ * 
+ * @param scalar pre scalar to test
+ * 
+ * @return if pre scalar is valid
+ */
+bool uhwtPlatformValidPreScalar(uhwt_prescalar_t scalar);
+
+/**
+ * Tests if given timer ticks is valid for platform
+ * 
+ * @param ticks timer ticks to test
+ * 
+ * @return if timer ticks is valid
+ */
+bool uhwtPlatformValidTimerTicks(uhwt_timertick_t ticks);
 
 /****************************
  * Callback
@@ -312,6 +330,16 @@ uhwt_prescalar_t uhwtPlatformGetPreScalar(uhwt_timer_t timer);
  * @return timer ticks
  */
 uhwt_timertick_t uhwtPlatformGetTimerTicks(uhwt_timer_t timer);
+
+/**
+ * Calculates timer frequency from given timer presets
+ * 
+ * @param scalar pre scalar for timer
+ * @param ticks timer ticks per cycle
+ * 
+ * @return calculated frequency
+ */
+uhwt_freq_t uhwtPlatformCalcFreq(uhwt_prescalar_t scalar, uhwt_timertick_t ticks);
 
 #ifdef __cplusplus
 }

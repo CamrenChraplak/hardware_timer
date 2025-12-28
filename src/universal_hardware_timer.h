@@ -86,6 +86,7 @@ typedef struct {
 
 	#include <esp_attr.h>
 	#include <esp_system.h>
+	#include <soc/soc_caps.h>
 
 	/****************************
 	 * Timer Config
@@ -94,7 +95,7 @@ typedef struct {
 	****************************/
 
 	#define UHWT_TIMER_FREQ_MAX 200000 // max frequency user set timer can be
-	#define UHWT_TIMER_COUNT 4 // amount of hardware timers to use
+	#define UHWT_TIMER_COUNT SOC_TIMER_GROUP_TOTAL_TIMERS // amount of hardware timers to use
 
 	typedef uint16_t uhwt_prescalar_t; // prescalar type
 	typedef uint64_t uhwt_timertick_t; // timer tick type
@@ -426,6 +427,24 @@ uhwt_timer_t uwhtGetNextTimer();
 uhwt_timer_t uwhtGetNextTimerStats(uhwt_claim_s claimArgs);
 
 /**
+ * uhwtGetStats(UHWT_TIMER_INVALID, ...):
+ * 
+ *                 Claimed:     Unclaimed:
+ * 
+ * Started:           -,            -
+ * 
+ * Not Started:       -,        Next Timer
+ * 
+ * uhwtGetStats(UHWT_TIMER#, ...):
+ * 
+ *                 Claimed:     Unclaimed:
+ * 
+ * Started:          Fail,      Next Timer
+ * 
+ * Not Started:   UHWT_TIMER#,  UHWT_TIMER#
+ */
+ 
+/**
  * Gets pre scalar and timer tick stats for target frequency for next available timer
  * 
  * @param timer pointer to timer to store new timer
@@ -433,11 +452,36 @@ uhwt_timer_t uwhtGetNextTimerStats(uhwt_claim_s claimArgs);
  * @param scalar pointer to pre scalar to store new value
  * @param timerTicks pointer to timer ticks to store new value
  * 
+ * @note uhwtGetStats(UHWT_TIMER_INVALID, ...):
+ * @note gets stats for next available timer
+ * @note uhwtGetStats(UHWT_TIMER#, ...):
+ * @note if not started, gets stats for UHWT_TIMER#
+ * @note if started and claimed, function fails
+ * @note if started and unclaimed, gets stats for next available timer
+ * 
  * @return if stats successfully set
  */
 bool uhwtGetStats(uhwt_timer_t *timer, uhwt_freq_t targetFreq,
 		uhwt_prescalar_t *scalar, uhwt_timertick_t *timerTicks);
 
+/**
+ * uhwtGetClosestStats(UHWT_TIMER_INVALID, ...):
+ * 
+ *                  Claimed:     Unclaimed:
+ * 
+ * Started:            -,            -
+ * 
+ * Not Started:        -,        Next Best
+ * 
+ * uhwtGetClosestStats(UHWT_TIMER#, ...):
+ * 
+ *                  Claimed:     Unclaimed:
+ * 
+ * Started:        Next Best,    Next Best
+ * 
+ * Not Started:   UHWT_TIMER#,   Next Best
+ */
+ 
 /**
  * Gets pre scalar and timer tick stats for target frequency for closest available timer
  * 
@@ -446,10 +490,27 @@ bool uhwtGetStats(uhwt_timer_t *timer, uhwt_freq_t targetFreq,
  * @param scalar pointer to pre scalar to store new value
  * @param timerTicks pointer to timer ticks to store new value
  * 
+ * @note uhwtGetClosestStats(UHWT_TIMER_INVALID, ...):
+ * @note gets stats for closest available timer
+ * @note uhwtGetClosestStats(UHWT_TIMER#, ...):
+ * @note if not started and is claimed, gets stats for closest available timer or given timer
+ * @note else, gets stats for closest available timer
+ * 
  * @return if stats successfully set
  */
 bool uhwtGetClosestStats(uhwt_timer_t *timer, uhwt_freq_t targetFreq,
 		uhwt_prescalar_t *scalar, uhwt_timertick_t *timerTicks);
+
+/**
+ * Sets timer stats for frequency
+ * 
+ * @param timer timer to set
+ * @param scalar scalar to set
+ * @param timerTicks ticks to set
+ * 
+ * @return if successful
+ */
+bool uhwtSetStats(uhwt_timer_t timer, uhwt_prescalar_t scalar, uhwt_timertick_t timerTicks);
 
 /**
  * Sets function to execute for timer ISR
@@ -462,17 +523,6 @@ bool uhwtGetClosestStats(uhwt_timer_t *timer, uhwt_freq_t targetFreq,
  */
 bool uhwtSetCallbackParams(uhwt_timer_t timer,
 		uhwt_function_ptr_t function, uhwt_params_ptr_t params);
-
-/**
- * Sets timer stats for frequency
- * 
- * @param timer timer to set
- * @param scalar scalar to set
- * @param timerTicks ticks to set
- * 
- * @return if successful
- */
-bool uhwtSetStats(uhwt_timer_t timer, uhwt_prescalar_t scalar, uhwt_timertick_t timerTicks);
 
 /**
  * Runs preprocessed code to initialize and set up timer
@@ -530,10 +580,6 @@ static inline bool uhwtValidTimer(uhwt_timer_t timer) {
 	return true;
 }
 
-/****************************
- * Platform Functions
-****************************/
-
 /**
  * Calculates timer frequency from given timer presets
  * 
@@ -543,6 +589,10 @@ static inline bool uhwtValidTimer(uhwt_timer_t timer) {
  * @return calculated frequency
  */
 uhwt_freq_t uhwtCalcFreq(uhwt_prescalar_t scalar, uhwt_timertick_t ticks);
+
+/****************************
+ * Platform Functions
+****************************/
 
 /**
  * Gets prescalar for given timer

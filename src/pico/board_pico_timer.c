@@ -27,8 +27,6 @@
 
 #include <pico/time.h>
 
-#define THOUSAND 1000
-
 // hardware timers
 struct repeating_timer timers[UHWT_TIMER_COUNT];
 uhwt_timertick_t picoTicks[UHWT_TIMER_COUNT];
@@ -40,20 +38,17 @@ uhwt_timertick_t picoTicks[UHWT_TIMER_COUNT];
  * 
  * @return pointer to timer selected
  */
-struct repeating_timer* getTimer(uhwt_timer_t timer) {
-	if (timer >= 0 && timer < UHWT_TIMER_COUNT) {
-		return &timers[timer];
-	}
-	return NULL;
+static inline struct repeating_timer* getTimer(uhwt_timer_t timer) {
+	return &timers[timer];
 }
 
-#define PICO_SDK_TIMER_MAX 1000000
+#define PICO_SDK_TIMER_MAX 1000000 // max frequency in Hz
 
 /****************************
  * Universal Hardware Timer Functions
 ****************************/
 
-uhwt_freq_t uhwtCalcFreq(uhwt_prescalar_t scalar, uhwt_timertick_t ticks) {
+uhwt_freq_t uhwtPlatformCalcFreq(uhwt_prescalar_t scalar, uhwt_timertick_t ticks) {
 	return PICO_SDK_TIMER_MAX / ticks;
 }
 
@@ -125,7 +120,7 @@ uhwt_timertick_t uhwtPlatformGetTimerTicks(uhwt_timer_t timer) {
 	return picoTicks[timer];
 }
 
-bool uhwtValidPreScalar(uhwt_timer_t timer, uhwt_prescalar_t scalar) {
+bool uhwtPlatformValidPreScalar(uhwt_prescalar_t scalar) {
 	if (scalar == 1) {
 		return true;
 	}

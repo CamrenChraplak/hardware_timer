@@ -43,12 +43,6 @@
 
 #include <avr/io.h>
 
-/*#if F_CPU == 16000000L
-	#define FREQ_MIN_8_COUNTER 62 // min frequency for 8 bit counter
-#else
-	#error "Frequency not supported"
-#endif*/
-
 // 1024 max scalar, 255 max ticks
 // 61.035Hz for 16MHz
 #define FREQ_MIN_8_COUNTER ((F_CPU) / (1024 * (255 + 1)) + 1) // min frequency for 8 bit counter

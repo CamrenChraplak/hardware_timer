@@ -122,7 +122,7 @@ uhwt_params_ptr_t hardTimerParams[UHWT_TIMER_COUNT];
 
 bool uhwtSetCallbackParams(uhwt_timer_t timer,
 		uhwt_function_ptr_t function, uhwt_params_ptr_t params) {
-	if (!uhwtValidTimer(timer)) {
+	if (!uhwtValidTimer(timer) || !uhwtTimerInitialized(timer) || uhwtTimerStarted(timer) || function == NULL) {
 		return false;
 	}
 	if (!uhwtPlatformSetCallbackParams(timer, function, params)) {

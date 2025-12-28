@@ -18,7 +18,7 @@
 
 #include "hardware_timer_avr.h"
 
-#if UHWT_TIMER_COUNT > 0 && UHWT_SUPPORT_AVR
+#if UHWT_SUPPORT_AVR
 
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
@@ -59,7 +59,7 @@ const uhwt_prescalar_t scalarMask[] PROGMEM = {
  * 
  * @return literal int value
  */
-uint16_t getMask(prescalar_enum_t scalar) {
+static inline uint16_t getMask(prescalar_enum_t scalar) {
 	return ((uint16_t)pgm_read_word_near(scalarMask + scalar));
 }
 
@@ -67,7 +67,7 @@ uint16_t getMask(prescalar_enum_t scalar) {
  * Universal Hardware Timer Functions
 ****************************/
 
-uhwt_freq_t uhwtCalcFreq(uhwt_prescalar_t scalar, uhwt_timertick_t ticks) {
+uhwt_freq_t uhwtPlatformCalcFreq(uhwt_prescalar_t scalar, uhwt_timertick_t ticks) {
 	return F_CPU / ((uhwt_freq_t)getMask(scalar) * (ticks + 1));
 }
 
@@ -339,18 +339,61 @@ uhwt_timertick_t uhwtPlatformGetTimerTicks(uhwt_timer_t timer) {
 	}
 }
 
-bool uhwtValidPreScalar(uhwt_timer_t timer, uhwt_prescalar_t scalar) {
-	if (scalar == 0) {
+bool uhwtPlatformValidPreScalar(uhwt_prescalar_t scalar) {
+	switch(scalar) {
+		#ifdef SCALAR_1_ENABLE
+			case SCALAR_1:
+				return true;
+			break;
+		#endif
+		#ifdef SCALAR_8_ENABLE
+			case SCALAR_8:
+				return true;
+			break;
+		#endif
+		#ifdef SCALAR_32_ENABLE
+			case SCALAR_32:
+				return true;
+			break;
+		#endif
+		#ifdef SCALAR_64_ENABLE
+			case SCALAR_64:
+				return true;
+			break;
+		#endif
+		#ifdef SCALAR_128_ENABLE
+			case SCALAR_128:
+				return true;
+			break;
+		#endif
+		#ifdef SCALAR_256_ENABLE
+			case SCALAR_256:
+				return true;
+			break;
+		#endif
+		#ifdef SCALAR_1024_ENABLE
+			case SCALAR_1024:
+				return true;
+			break;
+		#endif
+		default:
+			return false;
+		break;
+	}
+}
+
+bool uhwtValidTimerPreScalar(uhwt_timer_t timer, uhwt_prescalar_t scalar) {
+	if (!uhwtValidTimer(timer)) {
 		return false;
 	}
 	if ((scalar == SCALAR_32 || scalar == SCALAR_128) && timer != TIMER_2_ALIAS) {
 		return false;
 	}
-	return true;
+	return uhwtPlatformValidPreScalar(scalar);
 }
 
 bool uhwtValidTimerTicks(uhwt_timer_t timer, uhwt_timertick_t ticks) {
-	if (ticks == 0) {
+	if (!uhwtPlatformValidTimerTicks(ticks) || !uhwtValidTimer(timer)) {
 		return false;
 	}
 	uhwt_timertick_t maxValue = 0;
@@ -373,7 +416,7 @@ bool uhwtValidTimerTicks(uhwt_timer_t timer, uhwt_timertick_t ticks) {
 		default:
 		break;
 	}
-	if (ticks >= maxValue) {
+	if (ticks > maxValue) {
 		return false;
 	}
 	return true;
