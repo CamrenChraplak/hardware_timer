@@ -87,6 +87,14 @@ static inline timer_idx_t getTimerNum(uhwt_timer_t timer) {
 #include <hal/timer_types.h>
 #include <driver/gptimer.h>
 
+/*#ifndef APB_CLK_FREQ
+#define APB_CLK_FREQ 80000000
+#endif
+
+#ifndef GPTIMER_CLK_SRC_DEFAULT
+#define GPTIMER_CLK_SRC_DEFAULT SOC_MOD_CLK_APB
+#endif*/
+
 #if UHWT_TIMER_COUNT >= 1
 	gptimer_handle_t handler0 = NULL;
 #endif
@@ -120,11 +128,6 @@ typedef gptimer_handle_t** timer_ptr_t;
 // gptimer requires this as minimum freq
 #define HARD_TIMER_FREQ_MIN ((APB_CLK_FREQ / SCALAR_MAX) + 1)
 
-// stores frequency calculations
-uhwt_freq_t storedFreq[UHWT_TIMER_COUNT];
-// stores timer tick set
-uhwt_timertick_t storedTicks[UHWT_TIMER_COUNT];
-
 /**
  * Gets timer based on desired timer
  * 
@@ -139,6 +142,75 @@ timer_ptr_t getTimer(uhwt_timer_t timer) {
 	}
 	return &timers[timer];
 }
+
+#define DEFAULT_CONFIG { \
+	.clk_src = GPTIMER_CLK_SRC_DEFAULT, \
+	.direction = GPTIMER_COUNT_UP, \
+	.resolution_hz = HARD_TIMER_FREQ_MIN, \
+	.intr_priority = UHWT_PRIORITY_DEFAULT, \
+}
+
+gptimer_config_t timerConfigs[UHWT_TIMER_COUNT] = {
+	#if UHWT_TIMER_COUNT > 0
+		DEFAULT_CONFIG,
+	#endif
+	#if UHWT_TIMER_COUNT > 1
+		DEFAULT_CONFIG,
+	#endif
+	#if UHWT_TIMER_COUNT > 2
+		DEFAULT_CONFIG,
+	#endif
+	#if UHWT_TIMER_COUNT > 3
+		DEFAULT_CONFIG,
+	#endif
+};
+
+#define DEFAULT_ALARM_CONFIG { \
+	.reload_count = 0, \
+	.alarm_count = 1, \
+	.flags.auto_reload_on_alarm = true, \
+}
+
+gptimer_alarm_config_t timerAlarmConfigs[UHWT_TIMER_COUNT] = {
+	#if UHWT_TIMER_COUNT > 0
+		DEFAULT_ALARM_CONFIG,
+	#endif
+	#if UHWT_TIMER_COUNT > 1
+		DEFAULT_ALARM_CONFIG,
+	#endif
+	#if UHWT_TIMER_COUNT > 2
+		DEFAULT_ALARM_CONFIG,
+	#endif
+	#if UHWT_TIMER_COUNT > 3
+		DEFAULT_ALARM_CONFIG,
+	#endif
+};
+
+/**
+ * Void callback for initialization, of type gptimer_alarm_cb_t
+ */
+bool uhwtVoidCallback(gptimer_handle_t timer, const gptimer_alarm_event_data_t *edata, void *user_ctx) {
+	return false;
+}
+
+#define DEFAULT_CALLBACK_CONFIG { \
+	.on_alarm = &uhwtVoidCallback, \
+}
+
+gptimer_event_callbacks_t timerCallbackConfigs[UHWT_TIMER_COUNT] = {
+	#if UHWT_TIMER_COUNT > 0
+		DEFAULT_CALLBACK_CONFIG,
+	#endif
+	#if UHWT_TIMER_COUNT > 1
+		DEFAULT_CALLBACK_CONFIG,
+	#endif
+	#if UHWT_TIMER_COUNT > 2
+		DEFAULT_CALLBACK_CONFIG,
+	#endif
+	#if UHWT_TIMER_COUNT > 3
+		DEFAULT_CALLBACK_CONFIG,
+	#endif
+};
 
 #endif
 
@@ -214,6 +286,16 @@ bool uhwtPlatformInitTimer(uhwt_timer_t timer) {
 	
 	#elif ESP_IDF_VERSION_MAJOR == 5
 
+		timer_ptr_t timerPtr = getTimer(timer);
+
+		// creates new timer
+		ESP_ERROR_CHECK(gptimer_new_timer(&timerConfigs[timer], *timerPtr));
+		// sets up callback function
+		ESP_ERROR_CHECK(gptimer_set_alarm_action(**timerPtr, &timerAlarmConfigs[timer]));
+		// callback config
+		ESP_ERROR_CHECK(gptimer_register_event_callbacks(**timerPtr,
+				&timerCallbackConfigs[timer], NULL));
+
 	#endif
 
 	return true;
@@ -231,8 +313,8 @@ bool uhwtPlatformDeconstructTimer(uhwt_timer_t timer) {
 		ESP_ERROR_CHECK(timer_deinit(timerGroup, timerNum));
 
 	#elif ESP_IDF_VERSION_MAJOR == 5
+
 		timer_ptr_t timerPtr = getTimer(timer);
-		ESP_ERROR_CHECK(gptimer_disable(**timerPtr));
 		ESP_ERROR_CHECK(gptimer_del_timer(**timerPtr));
 		**timerPtr = NULL;
 	#endif
@@ -250,8 +332,10 @@ bool uhwtPlatformStopTimer(uhwt_timer_t timer) {
 		ESP_ERROR_CHECK(timer_set_alarm(timerGroup, timerNum, false));
 		ESP_ERROR_CHECK(timer_pause(timerGroup, timerNum));
 	#elif ESP_IDF_VERSION_MAJOR == 5
+
 		timer_ptr_t timerPtr = getTimer(timer);
 		ESP_ERROR_CHECK(gptimer_stop(**timerPtr));
+		ESP_ERROR_CHECK(gptimer_disable(**timerPtr));
 	#endif
 
 	return true;
@@ -272,35 +356,6 @@ bool uhwtPlatformStartTimer(uhwt_timer_t timer) {
 
 		timer_ptr_t timerPtr = getTimer(timer);
 
-		// timer config
-		gptimer_config_t config = {
-			.clk_src = GPTIMER_CLK_SRC_DEFAULT,
-			.direction = GPTIMER_COUNT_UP,
-			.resolution_hz = storedFreq[timer],
-			.intr_priority = setPriority(uhwtPriorities[timer]),
-		};
-
-		// function config
-		gptimer_alarm_config_t configAlarm = {
-			.reload_count = 0,
-			.alarm_count = storedTicks[timer],
-			.flags.auto_reload_on_alarm = true,
-		};
-
-		// creates new timer
-		ESP_ERROR_CHECK(gptimer_new_timer(&config, *timerPtr));
-
-		// sets up callback function
-		ESP_ERROR_CHECK(gptimer_set_alarm_action(**timerPtr, &configAlarm));
-
-		// callback config
-		gptimer_event_callbacks_t configCallback = {
-			.on_alarm = uhwtGetCallback(timer),
-		};
-
-		ESP_ERROR_CHECK(gptimer_register_event_callbacks(**timerPtr,
-				&configCallback, NULL));
-
 		// starts timer
 		ESP_ERROR_CHECK(gptimer_enable(**timerPtr));
 		ESP_ERROR_CHECK(gptimer_start(**timerPtr));
@@ -317,7 +372,9 @@ bool uhwtPlatformSetStats(uhwt_timer_t timer, uhwt_prescalar_t scalar, uhwt_time
 
 		ESP_ERROR_CHECK(timer_set_alarm_value(timerGroup, timerNum, timerTicks));
 		ESP_ERROR_CHECK(timer_set_divider(timerGroup, timerNum, scalar));
+		return true;
 	#elif ESP_IDF_VERSION_MAJOR == 5
+
 		uhwt_freq_t tempFreq = uhwtCalcFreq(scalar, timerTicks);
 		uhwt_timertick_t tempTicks = 1;
 
@@ -327,11 +384,15 @@ bool uhwtPlatformSetStats(uhwt_timer_t timer, uhwt_prescalar_t scalar, uhwt_time
 			tempTicks *= 2;
 		}
 
-		storedFreq[timer] = tempFreq;
-		storedTicks[timer] = tempTicks;
+		timerConfigs[timer].resolution_hz = tempFreq;
+		timerAlarmConfigs[timer].alarm_count = tempTicks;
+
+		if (!uhwtPlatformDeconstructTimer(timer)) {
+			return false;
+		}
+		return uhwtPlatformInitTimer(timer);
 
 	#endif
-	return true;
 }
 
 bool uhwtPlatformEqualFreq(uhwt_freq_t targetFreq, uhwt_prescalar_t scalar, uhwt_timertick_t ticks) {
@@ -377,10 +438,8 @@ uhwt_prescalar_t uhwtPlatformGetPreScalar(uhwt_timer_t timer) {
 		ESP_ERROR_CHECK(timer_get_config(timerGroup, timerNum, &config));
 		return config.divider;
 	#elif ESP_IDF_VERSION_MAJOR == 5
-		timer_ptr_t timerPtr = getTimer(timer);
-		uhwt_freq_t freq;
-		ESP_ERROR_CHECK(gptimer_get_resolution(**timerPtr, &freq));
-		return uhwtCalcScalar(freq, storedTicks[timer]);
+		// TODO: use gptimer_get_resolution or user set for frequency?
+		return uhwtCalcScalar(timerConfigs[timer].resolution_hz, uhwtPlatformGetTimerTicks(timer));
 	#endif
 }
 
@@ -395,7 +454,7 @@ uhwt_timertick_t uhwtPlatformGetTimerTicks(uhwt_timer_t timer) {
 		ESP_ERROR_CHECK(timer_get_alarm_value(timerGroup, timerNum, &ticks));
 		return ticks;
 	#elif ESP_IDF_VERSION_MAJOR == 5
-		return storedTicks[timer];
+		return timerAlarmConfigs[timer].alarm_count;
 	#endif
 }
 
@@ -447,9 +506,18 @@ bool uhwtPlatformSetCallbackParams(uhwt_timer_t timer,
 				timerNum, uhwtGetCallback(timer), params,
 				setPriority(uhwtPriorities[timer])));
 
-	#endif
+		return true;
 
-	return true;
+	#elif ESP_IDF_VERSION_MAJOR == 5
+
+		if (!uhwtPlatformDeconstructTimer(timer)) {
+			return false;
+		}
+
+		timerCallbackConfigs[timer].on_alarm = uhwtGetCallback(timer);
+		return uhwtPlatformInitTimer(timer);
+
+	#endif
 }
 
 #endif

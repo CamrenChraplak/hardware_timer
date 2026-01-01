@@ -179,7 +179,8 @@ bool setHardTimer(uhwt_timer_t *timer, uhwt_freq_t *freq, uhwt_function_ptr_t fu
 	//if (!uhwtSetupComplexTimer(timer, *freq, function, params, priority)) {
 		return false;
 	}
-	*freq = uhwtCalcFreq(uhwtGetPreScalar(*timer), uhwtGetTimerTicks(*timer));
+	// TODO: this breaks esp32 even when set to constant
+	// *freq = uhwtCalcFreq(uhwtGetPreScalar(*timer), uhwtGetTimerTicks(*timer));
 	return uhwtStartTimer(*timer);
 }
 

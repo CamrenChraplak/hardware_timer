@@ -528,6 +528,8 @@ void testFastTiming() {
 
 void testUHWT() {
 	UHWT_SET_FILE_NAME("hardware_timer_test_priv.c");
+	// TODO: esp32 freezes when 'testRepeat' isn't run before timing
+	// both v4 and v5
 	RUN_TEST(&testProgramStart);
 	RUN_TEST(&testRepeat);
 	RUN_TEST(&testClaims);
