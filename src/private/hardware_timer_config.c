@@ -1,6 +1,6 @@
 /*
 	hardware_timer_config.c - hardware timer config functionality
-	Copyright (C) 2025 Camren Chraplak
+	Copyright (C) 2025-2026 Camren Chraplak
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -179,8 +179,7 @@ bool setHardTimer(uhwt_timer_t *timer, uhwt_freq_t *freq, uhwt_function_ptr_t fu
 	//if (!uhwtSetupComplexTimer(timer, *freq, function, params, priority)) {
 		return false;
 	}
-	// TODO: this breaks esp32 even when set to constant
-	// *freq = uhwtCalcFreq(uhwtGetPreScalar(*timer), uhwtGetTimerTicks(*timer));
+	*freq = uhwtCalcFreq(uhwtGetPreScalar(*timer), uhwtGetTimerTicks(*timer));
 	return uhwtStartTimer(*timer);
 }
 

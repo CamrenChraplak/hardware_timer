@@ -1,6 +1,6 @@
 /*
 	hardware_timer_esp32_v4.c - timer configuration for esp idf v4
-	Copyright (C) 2025 Camren Chraplak
+	Copyright (C) 2025-2026 Camren Chraplak
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -92,7 +92,7 @@ bool uhwtPlatformInitTimer(uhwt_timer_t timer) {
 	timer_idx_t timerNum = getTimerNum(timer);
 	
 	ESP_ERROR_CHECK(timer_init(timerGroup, timerNum, &config));
-	ESP_ERROR_CHECK(timer_set_counter_value(timerGroup, timerNum, TIMER_COUNT_ZERO));
+	ESP_ERROR_CHECK(timer_set_counter_value(timerGroup, timerNum, 0));
 
 	return true;
 }
@@ -102,7 +102,7 @@ bool uhwtPlatformDeconstructTimer(uhwt_timer_t timer) {
 	timer_group_t timerGroup = getTimerGroup(timer);
 	timer_idx_t timerNum = getTimerNum(timer);
 
-	ESP_ERROR_CHECK(timer_set_counter_value(timerGroup, timerNum, TIMER_COUNT_ZERO));
+	ESP_ERROR_CHECK(timer_set_counter_value(timerGroup, timerNum, 0));
 	ESP_ERROR_CHECK(timer_isr_callback_remove(timerGroup, timerNum));
 	ESP_ERROR_CHECK(timer_deinit(timerGroup, timerNum));
 

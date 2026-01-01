@@ -1,6 +1,6 @@
 /*
 	hardware_timer_esp32_v5.c - timer configuration for esp idf v5
-	Copyright (C) 2025 Camren Chraplak
+	Copyright (C) 2025-2026 Camren Chraplak
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -50,7 +50,37 @@ gptimer_handle_t timers[] = {
 	#endif
 };
 
-// gptimer requires this as minimum freq
+uhwt_timertick_t storedTicks[] = {
+	#if UHWT_TIMER_COUNT >= 1
+		0U,
+	#endif
+	#if UHWT_TIMER_COUNT >= 2
+		0U,
+	#endif
+	#if UHWT_TIMER_COUNT >= 3
+		0U,
+	#endif
+	#if UHWT_TIMER_COUNT >= 4
+		0U,
+	#endif
+};
+
+uhwt_prescalar_t storedScalar[] = {
+	#if UHWT_TIMER_COUNT >= 1
+		0U,
+	#endif
+	#if UHWT_TIMER_COUNT >= 2
+		0U,
+	#endif
+	#if UHWT_TIMER_COUNT >= 3
+		0U,
+	#endif
+	#if UHWT_TIMER_COUNT >= 4
+		0U,
+	#endif
+};
+
+// gptimer requires this as minimum freq, typically ~1222
 #define HARD_TIMER_FREQ_MIN ((APB_CLK_FREQ / SCALAR_MAX) + 1)
 
 /**
@@ -60,8 +90,8 @@ gptimer_handle_t timers[] = {
  * 
  * @return pointer to timer selected
  */
-static inline gptimer_handle_t getTimer(uhwt_timer_t timer) {
-	return timers[timer];
+static inline gptimer_handle_t* getTimer(uhwt_timer_t timer) {
+	return &timers[timer];
 }
 
 #define DEFAULT_CONFIG { \
@@ -153,14 +183,14 @@ static inline bool uhwtReconfigureTimer(uhwt_timer_t timer) {
 
 bool uhwtPlatformInitTimer(uhwt_timer_t timer) {
 
-	gptimer_handle_t timerPtr = getTimer(timer);
+	gptimer_handle_t *timerPtr = getTimer(timer);
 
 	// creates new timer
-	ESP_ERROR_CHECK(gptimer_new_timer(&timerConfigs[timer], &timerPtr));
+	ESP_ERROR_CHECK(gptimer_new_timer(&timerConfigs[timer], timerPtr));
 	// sets up callback function
-	ESP_ERROR_CHECK(gptimer_set_alarm_action(timerPtr, &timerAlarmConfigs[timer]));
+	ESP_ERROR_CHECK(gptimer_set_alarm_action(*timerPtr, &timerAlarmConfigs[timer]));
 	// callback config
-	ESP_ERROR_CHECK(gptimer_register_event_callbacks(timerPtr,
+	ESP_ERROR_CHECK(gptimer_register_event_callbacks(*timerPtr,
 			&timerCallbackConfigs[timer], NULL));
 
 	return true;
@@ -168,8 +198,8 @@ bool uhwtPlatformInitTimer(uhwt_timer_t timer) {
 
 bool uhwtPlatformDeconstructTimer(uhwt_timer_t timer) {
 
-	gptimer_handle_t timerPtr = getTimer(timer);
-	ESP_ERROR_CHECK(gptimer_del_timer(timerPtr));
+	gptimer_handle_t *timerPtr = getTimer(timer);
+	ESP_ERROR_CHECK(gptimer_del_timer(*timerPtr));
 	timerPtr = NULL;
 
 	return true;
@@ -177,18 +207,18 @@ bool uhwtPlatformDeconstructTimer(uhwt_timer_t timer) {
 
 bool uhwtPlatformStopTimer(uhwt_timer_t timer) {
 
-	gptimer_handle_t timerPtr = getTimer(timer);
-	ESP_ERROR_CHECK(gptimer_stop(timerPtr));
-	ESP_ERROR_CHECK(gptimer_disable(timerPtr));
+	gptimer_handle_t *timerPtr = getTimer(timer);
+	ESP_ERROR_CHECK(gptimer_stop(*timerPtr));
+	ESP_ERROR_CHECK(gptimer_disable(*timerPtr));
 
 	return true;
 }
 
 bool uhwtPlatformStartTimer(uhwt_timer_t timer) {
 
-	gptimer_handle_t timerPtr = getTimer(timer);
-	ESP_ERROR_CHECK(gptimer_enable(timerPtr));
-	ESP_ERROR_CHECK(gptimer_start(timerPtr));
+	gptimer_handle_t *timerPtr = getTimer(timer);
+	ESP_ERROR_CHECK(gptimer_enable(*timerPtr));
+	ESP_ERROR_CHECK(gptimer_start(*timerPtr));
 
 	return true;
 }
@@ -207,16 +237,18 @@ bool uhwtPlatformSetStats(uhwt_timer_t timer, uhwt_prescalar_t scalar, uhwt_time
 	timerConfigs[timer].resolution_hz = tempFreq;
 	timerAlarmConfigs[timer].alarm_count = tempTicks;
 
+	storedTicks[timer] = timerTicks;
+	storedScalar[timer] = scalar;
+
 	return uhwtReconfigureTimer(timer);
 }
 
 uhwt_prescalar_t uhwtPlatformGetPreScalar(uhwt_timer_t timer) {
-	// TODO: use gptimer_get_resolution or user set for frequency?
-	return uhwtCalcScalar(timerConfigs[timer].resolution_hz, uhwtPlatformGetTimerTicks(timer));
+	return storedScalar[timer];
 }
 
 uhwt_timertick_t uhwtPlatformGetTimerTicks(uhwt_timer_t timer) {
-	return timerAlarmConfigs[timer].alarm_count;
+	return storedTicks[timer];
 }
 
 bool uhwtPlatformSetCallbackParams(uhwt_timer_t timer,
