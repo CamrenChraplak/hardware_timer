@@ -251,6 +251,12 @@ void testRepeat() {
 	if (cancelHardTimer(timer)) {
 		TEST_FAIL_MESSAGE(recancelFail);
 	}
+	if (!cancelHardTimer(secondTimer)) {
+		TEST_FAIL_MESSAGE(cancelFail);
+	}
+	if (cancelHardTimer(secondTimer)) {
+		TEST_FAIL_MESSAGE(recancelFail);
+	}
 	TEST_PASS();
 }
 

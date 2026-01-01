@@ -82,7 +82,9 @@ typedef const char memCharString;
 	#define TEST_PASS() printMessageType("", __LINE__, TEST_PASSED); return
 
 	#define TEST_ASSERT_UINT32_WITHIN(buffer, targetCount, realCount) if (!timerCountWithin(buffer, targetCount, realCount, __LINE__)) {return;}
+#endif
 
+#ifndef UHWT_SET_FILE_NAME
 	#define UHWT_SET_FILE_NAME(fileName) // sets file name for testing
 #endif
 
