@@ -1,6 +1,6 @@
 /*
 	hardware_timer_test_delay.c - delay methods for timer
-	Copyright (C) 2025 Camren Chraplak
+	Copyright (C) 2025-2026 Camren Chraplak
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -18,12 +18,21 @@
 
 #include "hardware_timer_test_priv.h"
 
-#if defined(ARDUINO) && !(defined(UHWT_OVERRIDE_ARDUINO_TIMER) && (UHWT_SUPPORT_AVR))
+#if UHWT_SUPPORT_ESP32
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+void delaySeconds(uint8_t seconds) {
+	vTaskDelay(seconds * 1000 / portTICK_PERIOD_MS);
+}
+
+#elif defined(ARDUINO) && !(defined(UHWT_OVERRIDE_ARDUINO_TIMER) && (UHWT_SUPPORT_AVR))
 
 #include <Arduino.h>
 
 void delaySeconds(uint8_t seconds) {
-	delay(seconds * 1000);
+	delay(((uint32_t)seconds) * 1000);
 }
 
 #else
@@ -38,12 +47,12 @@ void delaySeconds(uint8_t seconds) {
  * @param params parameters passed
  */
 void timerDelayCounter(void *params) {
-	*(volatile uint8_t*)params += 1;
+	*(uint8_t*)params += 1;
 }
 
 void delaySeconds(uint8_t seconds) {
 	uhwt_timer_t timer = UHWT_TIMER_INVALID;
-	volatile uint8_t delayCount = 0U;
+	uint8_t delayCount = 0U;
 
 	uhwt_freq_t freq =
 	#ifdef FREQ_MIN_8_COUNTER

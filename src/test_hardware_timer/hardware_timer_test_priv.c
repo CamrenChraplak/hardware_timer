@@ -1,6 +1,6 @@
 /*
 	hardware_timer_test_priv.c - methods to test timer methods
-	Copyright (C) 2025 Camren Chraplak
+	Copyright (C) 2025-2026 Camren Chraplak
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -499,9 +499,7 @@ void testTiming(uhwt_freq_t freq, uint8_t buffer, uhwt_priority_t priority) {
 	resetTimers();
 	uhwt_timer_t functionTimer = UHWT_TIMER_INVALID;
 
-	testGetStartState(functionTimer, false);
 	hardTimerCount = 0U;
-
 	uint32_t counter = 1;
 
 	if (!setHardTimer(&functionTimer, &freq, &testTimingFunctionParams, &counter, priority)) {
@@ -534,8 +532,6 @@ void testFastTiming() {
 
 void testUHWT() {
 	UHWT_SET_FILE_NAME("hardware_timer_test_priv.c");
-	// TODO: esp32 freezes when 'testRepeat' isn't run before timing
-	// both v4 and v5
 	RUN_TEST(&testProgramStart);
 	RUN_TEST(&testRepeat);
 	RUN_TEST(&testClaims);

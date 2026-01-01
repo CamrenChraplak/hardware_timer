@@ -1,6 +1,6 @@
 /*
 	hardware_timer_callback.c - hardware timer callback functionality
-	Copyright (C) 2025 Camren Chraplak
+	Copyright (C) 2025-2026 Camren Chraplak
 
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,15 +19,162 @@
 #include "hardware_timer_priv.h"
 
 // functions to execute at end of ISR
-uhwt_function_ptr_t hardTimerFunctions[UHWT_TIMER_COUNT];
+uhwt_function_ptr_t hardTimerFunctions[] = {
+	#if UHWT_TIMER_COUNT >= 1
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 2
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 3
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 4
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 5
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 6
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 7
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 8
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 9
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 10
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 11
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 12
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 13
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 14
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 15
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 16
+		NULL,
+	#endif
+};
 
 // function parameters to pass
-uhwt_params_ptr_t hardTimerParams[UHWT_TIMER_COUNT];
+uhwt_params_ptr_t hardTimerParams[] = {
+	#if UHWT_TIMER_COUNT >= 1
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 2
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 3
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 4
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 5
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 6
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 7
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 8
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 9
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 10
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 11
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 12
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 13
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 14
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 15
+		NULL,
+	#endif
+	#if UHWT_TIMER_COUNT >= 16
+		NULL,
+	#endif
+};
 
 #ifndef UHWT_NO_CALLBACK_SUPPORT
 
 	// callback functions for linking to ISR
-	uhwt_platform_callback_ptr_t hardTimerCallbacks[UHWT_TIMER_COUNT];
+	uhwt_platform_callback_ptr_t hardTimerCallbacks[] = {
+		#if UHWT_TIMER_COUNT >= 1
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 2
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 3
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 4
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 5
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 6
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 7
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 8
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 9
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 10
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 11
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 12
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 13
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 14
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 15
+			NULL,
+		#endif
+		#if UHWT_TIMER_COUNT >= 16
+			NULL,
+		#endif
+	};
 
 	#if UHWT_SUPPORT_ESP32
 
@@ -125,9 +272,7 @@ bool uhwtSetCallbackParams(uhwt_timer_t timer,
 	if (!uhwtValidTimer(timer) || !uhwtTimerInitialized(timer) || uhwtTimerStarted(timer) || function == NULL) {
 		return false;
 	}
-	if (!uhwtPlatformSetCallbackParams(timer, function, params)) {
-		return false;
-	}
+
 	hardTimerFunctions[timer] = function;
 	hardTimerParams[timer] = params;
 
@@ -187,6 +332,13 @@ bool uhwtSetCallbackParams(uhwt_timer_t timer,
 		}
 
 	#endif
+
+	if (!uhwtPlatformSetCallbackParams(timer, function, params)) {
+		hardTimerFunctions[timer] = NULL;
+		hardTimerParams[timer] = NULL;
+		hardTimerCallbacks[timer] = NULL;
+		return false;
+	}
 
 	return true;
 }
